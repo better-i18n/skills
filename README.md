@@ -1,81 +1,47 @@
-```
-  ╔══════════════════════════════════════════╗
-  ║   _  _  ___        _  _   _              ║
-  ║  (_)/ |( _ ) _ __ | || | | |             ║
-  ║  | || |/ _ \| '_ \| || |_| |             ║
-  ║  | || | (_) | | | |__   _|_|             ║
-  ║  |_||_|\___/|_| |_|  |_| (_)             ║
-  ║                                          ║
-  ║           Best Practices                 ║
-  ╚══════════════════════════════════════════╝
-```
+# Better i18n Agent Skills
 
-# i18n Best Practices Skill
+Official AI agent skills for the [Better i18n](https://better-i18n.com) localization platform.
 
-A comprehensive agent skill for building production-ready internationalization systems. Covers everything from key management to AI translation, with a focus on scalability, maintainability, and developer experience.
+## Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| [best-practices](./better-i18n/best-practices) | Comprehensive guide for i18n implementation |
 
 ## Installation
 
 ```bash
-npx skills add better-i18n/i18n-best-practices
+# Via skills CLI
+npx skills add better-i18n/skills
+
+# Or add to your Claude project
 ```
 
-## What This Skill Covers
+## What's Included
 
-### Getting Started
-- Creating projects and organizations
-- Setting up source and target languages
-- Choosing between CDN-first and GitHub-connected workflows
+### best-practices
 
-### Key Management
-- Naming conventions and namespaces
-- Translation statuses and workflows
-- Bulk operations and search patterns
-
-### Translation
-- AI-assisted translation with context
-- Glossary management for consistent terminology
-- Quality review and approval workflows
-
-### Integration
-- GitHub sync for version-controlled translations
-- CDN delivery for edge-cached content
-- MCP tools for AI coding assistants
-- React and Next.js SDK integration
-
-### Best Practices
-- ICU MessageFormat for plurals, dates, numbers
+A comprehensive skill covering:
+- Project setup and configuration (`i18n.config.ts`)
+- Key naming conventions and namespaces
+- AI-assisted translation with glossary
+- GitHub sync and PR workflows
+- CDN delivery and caching
+- MCP tools integration
+- SDK integration (Next.js, React, TanStack Start)
+- ICU MessageFormat (plurals, dates, numbers)
 - RTL language support
-- Accessibility considerations
-- Performance optimization
 
-## Structure
+## Usage
 
-```
-i18n-best-practices/
-├── SKILL.md                              # Start here - routes to the right resource
-└── resources/
-    ├── getting-started.md                # Project setup, configuration
-    ├── key-management.md                 # Naming, namespaces, organization
-    ├── ai-translation.md                 # AI translation, glossary
-    ├── github-sync.md                    # Repository integration, PRs
-    ├── cdn-delivery.md                   # Edge caching, versioning
-    ├── mcp-integration.md                # MCP tools for AI assistants
-    ├── sdk-integration.md                # React, Next.js integration
-    └── best-practices.md                 # Plurals, formatting, RTL
-```
+Once installed, AI assistants will automatically use these skills when helping with internationalization tasks in your project.
 
-## Quick Start
+## Links
 
-Open [SKILL.md](./SKILL.md) - it has a routing table that directs you to the right resource based on what you need to do.
-
-## Related Links
-
-- [Better i18n Documentation](https://docs.better-i18n.com)
-- [Better i18n Dashboard](https://better-i18n.com)
-- [MCP Server Package](https://npmjs.com/package/@better-i18n/mcp)
-- [Next.js SDK](https://npmjs.com/package/@better-i18n/next)
-- [React SDK](https://npmjs.com/package/@better-i18n/use-intl)
+- [Documentation](https://docs.better-i18n.com)
+- [Dashboard](https://better-i18n.com)
+- [CLI](https://npmjs.com/package/better-i18n)
+- [MCP Server](https://npmjs.com/package/@better-i18n/mcp-server)
 
 ## License
 
