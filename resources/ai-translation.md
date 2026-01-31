@@ -1,6 +1,6 @@
 # AI Translation
 
-Translate content with context-aware AI assistance.
+Translate content with context-aware AI assistance and glossary support.
 
 ## Overview
 
@@ -8,7 +8,7 @@ Better i18n uses AI to provide intelligent translations that understand:
 - Your product context and terminology
 - Brand voice and tone
 - Technical terms via glossary
-- Previous translation patterns
+- ICU MessageFormat syntax (plurals, dates, variables)
 
 ## AI Translation Workflow
 
@@ -22,12 +22,12 @@ Better i18n uses AI to provide intelligent translations that understand:
 
 ## Using the AI Drawer
 
-The AI Drawer is the primary interface for AI-assisted translation.
+The AI Drawer is the primary interface for AI-assisted translation in Better i18n.
 
 ### Opening the Drawer
 
-- Click "Better AI" button in header
-- Or press `Cmd/Ctrl + I`
+- Click the AI button in the header
+- Or use keyboard shortcut
 
 ### Translation Commands
 
@@ -46,17 +46,24 @@ Translate to German. This is for a formal business app, use Sie form.
 Translate all untranslated keys in the auth namespace to French
 ```
 
-### AI Understands Context
+**With specific instructions:**
+```
+Translate to Japanese. Keep technical terms in English.
+Use polite form (です/ます).
+```
+
+### How Context Works
 
 The AI considers:
-- Surrounding keys in same namespace
-- Previously approved translations
-- Glossary terms
-- Key naming patterns
+- Key naming patterns (`auth.login.error` → knows it's an error message)
+- Surrounding keys in the same namespace
+- Previously approved translations for consistency
+- Glossary terms that must be preserved
+- ICU syntax that must remain intact
 
 ## Glossary
 
-The glossary ensures consistent terminology across translations.
+The glossary ensures consistent terminology across all translations.
 
 ### Adding Terms
 
@@ -69,7 +76,7 @@ Translations:
   - de: "Arbeitsbereich"
   - fr: "espace de travail"
 
-Note: Technical term, always translate consistently
+Note: Product-specific term, always translate consistently
 ```
 
 ### Glossary Structure
@@ -101,89 +108,16 @@ Note: Technical term, always translate consistently
 Some terms should remain in English:
 
 ```
-Brand names: "Better i18n", "GitHub"
-Technical: "API", "JSON", "webhook"
-Product features: "AI Drawer", "MCP"
+Brand names: "Better i18n", "GitHub", "Cloudflare"
+Technical: "API", "JSON", "webhook", "CDN"
+Acronyms: "SSO", "SAML", "OAuth"
 ```
 
-## Translation Quality
+## Handling ICU MessageFormat
 
-### Review Process
+AI preserves ICU syntax automatically:
 
-1. **AI generates draft** - Initial translation
-2. **Human reviews** - Check for accuracy, tone
-3. **Approve or reject** - Move to production or revise
-
-### Quality Indicators
-
-| Indicator | Meaning |
-|-----------|---------|
-| ✅ Glossary match | Uses correct terminology |
-| ⚠️ Length warning | Translation significantly longer/shorter |
-| 🔄 Pattern match | Similar to approved translations |
-| ❓ Low confidence | AI uncertain, needs human review |
-
-## Batch Translation
-
-### Via Dashboard
-
-1. Select multiple keys (checkbox)
-2. Click "Translate with AI"
-3. Choose target language(s)
-4. Review and approve
-
-### Via MCP
-
-```json
-{
-  "tool": "translateKeys",
-  "project": "my-org/my-app",
-  "keys": ["common.buttons.*"],
-  "targetLanguages": ["tr", "de"],
-  "useGlossary": true
-}
-```
-
-### Via AI Chat
-
-```
-Translate all keys in the "checkout" namespace to Spanish and French.
-Use formal tone. Mark payment-related terms from glossary.
-```
-
-## Context Hints
-
-Provide context to improve translation quality:
-
-### In Key Names
-
-```
-auth.login.button.submit        # Clear it's a button
-email.welcome.subject           # Email subject line
-error.validation.email.invalid  # Error message context
-```
-
-### In Source Text
-
-```json
-{
-  "checkout.total": "Total: {amount}",
-  "items.count": "{count, plural, one {# item} other {# items}}"
-}
-```
-
-### In AI Prompts
-
-```
-These are error messages shown to users when form validation fails.
-Keep them friendly but clear. Max 100 characters.
-```
-
-## Handling Special Content
-
-### Variables and Placeholders
-
-AI preserves placeholders automatically:
+### Variables
 
 ```
 Source: "Welcome, {name}!"
@@ -192,27 +126,118 @@ AI Output (Turkish): "Hoş geldin, {name}!"
 
 ### Pluralization
 
-ICU MessageFormat is preserved:
-
 ```
 Source: "{count, plural, one {# item} other {# items}}"
 AI Output (Turkish): "{count, plural, one {# öğe} other {# öğe}}"
 ```
 
-### HTML/Markdown
-
-Formatting tags are preserved:
+### Select (Gender)
 
 ```
-Source: "Click <strong>here</strong> to continue"
-AI Output: "Devam etmek için <strong>buraya</strong> tıklayın"
+Source: "{gender, select, male {He} female {She} other {They}} liked your post"
+AI Output (German): "{gender, select, male {Er} female {Sie} other {Die Person}} hat deinen Beitrag geliked"
+```
+
+### Dates
+
+```
+Source: "Posted on {date, date, long}"
+AI Output (German): "Veröffentlicht am {date, date, long}"
+```
+
+## Translation Quality
+
+### Review Process
+
+1. **AI generates draft** - Initial translation with glossary applied
+2. **Status: Draft** - Needs human review
+3. **Human reviews** - Check accuracy, tone, context
+4. **Status: Reviewed** - Verified by translator
+5. **Approve** - Ready for production
+6. **Publish** - Deployed to CDN
+
+### Quality Indicators
+
+| Indicator | Meaning |
+|-----------|---------|
+| ✅ Glossary applied | Uses correct terminology |
+| ⚠️ Length warning | Translation 50%+ longer/shorter |
+| 🔄 Pattern match | Similar to approved translations |
+| ❓ Review suggested | Complex content, needs human check |
+
+## Batch Translation
+
+### Via Dashboard
+
+1. Filter keys (namespace, status, etc.)
+2. Select multiple keys (checkbox)
+3. Click "Translate with AI"
+4. Choose target language(s)
+5. Review and approve
+
+### Via MCP
+
+```
+You: Translate all keys in the checkout namespace to Turkish and German
+
+Claude: [Uses translateKeys tool with glossary context]
+```
+
+### Via AI Chat
+
+```
+Translate all untranslated keys to Spanish.
+Use formal "usted" form.
+Mark payment-related terms from glossary.
+```
+
+## Context Hints for Better Translations
+
+### In Key Names
+
+```
+auth.login.button.submit        # Clear it's a button
+email.welcome.subject           # Email subject line
+error.validation.email.invalid  # Error message
+toast.success.saved             # Success notification
+```
+
+### In AI Prompts
+
+```
+These are error messages shown when form validation fails.
+Keep them friendly but clear.
+Max 100 characters.
+Target audience: enterprise software users.
 ```
 
 ## Tips for Better AI Translations
 
 1. **Set up glossary first** - Before bulk translation
-2. **Provide context** - In prompts or key names
-3. **Review samples** - Check a few before batch approve
-4. **Use consistent source** - Clear, grammatically correct English
-5. **Avoid idioms** - They don't translate well
-6. **Keep it simple** - Shorter sentences = better translations
+2. **Use descriptive key names** - AI uses them for context
+3. **Provide context in prompts** - Explain the UI context
+4. **Review samples first** - Check a few before batch approve
+5. **Keep source text clear** - Grammatically correct, no idioms
+6. **Use consistent patterns** - Same structure across similar content
+
+## Language-Specific Notes
+
+### German
+- Formal (Sie) vs informal (du)
+- Compound words may be longer
+- Noun capitalization
+
+### Turkish
+- Vowel harmony in suffixes
+- Formal (siz) vs informal (sen)
+- Different plural rules
+
+### Japanese
+- Formal (です/ます) vs casual
+- Honorifics and keigo
+- No spaces between words
+
+### Arabic/Hebrew
+- Right-to-left text direction
+- Different numeral systems
+- Gender agreement

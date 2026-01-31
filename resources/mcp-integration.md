@@ -5,23 +5,24 @@ Use Better i18n tools directly in your AI coding assistant.
 ## Overview
 
 The Better i18n MCP (Model Context Protocol) server enables AI assistants like Claude to:
-- Create and update translation keys
-- Translate content with AI
-- Manage project settings
-- Query translation status
+- Query and search translation keys
+- Create and update translations
+- Translate content with AI using glossary context
+- Delete obsolete keys
+- Manage translation workflows
 
 ## Installation
 
 ### Claude Desktop
 
-Add to your Claude Desktop config (`~/.config/claude/config.json` on macOS):
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
   "mcpServers": {
     "better-i18n": {
       "command": "npx",
-      "args": ["@better-i18n/mcp"],
+      "args": ["-y", "@anthropic-ai/better-i18n-mcp@latest"],
       "env": {
         "BETTER_I18N_API_KEY": "your-api-key"
       }
@@ -30,101 +31,106 @@ Add to your Claude Desktop config (`~/.config/claude/config.json` on macOS):
 }
 ```
 
-### Claude Code
-
-```bash
-# Install globally
-npm install -g @better-i18n/mcp
-
-# Or run directly
-npx @better-i18n/mcp
-```
-
 ### Getting API Key
 
-```
-Dashboard → Settings → API Keys → Create Key
-
-Scopes needed:
-- projects:read
-- keys:read
-- keys:write
-- translations:read
-- translations:write
-```
+1. Go to Better i18n Dashboard
+2. Navigate to **Settings → API Keys**
+3. Create a new key with required scopes:
+   - `projects:read`
+   - `keys:read`
+   - `keys:write`
+   - `translations:read`
+   - `translations:write`
 
 ## Available Tools
 
-### listProjects
+### getTranslations
 
-List all projects in your workspace.
+Search and retrieve translations with powerful filtering.
 
-```json
-{
-  "tool": "listProjects"
-}
+```
+Parameters:
+- projectId: Project ID (required)
+- status: Filter by status (all, draft, reviewed, approved)
+- namespace: Filter by namespace
+- search: Search in key names
+- searchValue: Search in translation values
+- searchLanguage: Language to search values in
+- limit: Max results (default: 50)
 ```
 
-**Response:**
+**Example usage:**
+```
+"Find all draft translations in the auth namespace"
+→ Uses getTranslations with status: "draft", namespace: "auth"
+
+"Search for translations containing 'login' in Turkish"
+→ Uses getTranslations with searchValue: "login", searchLanguage: "tr"
+```
+
+### getKeyDetails
+
+Get detailed information about specific keys including all translations.
+
+```
+Parameters:
+- projectId: Project ID (required)
+- keyNames: Array of key names to retrieve
+- namespace: Namespace (default: "default")
+```
+
+**Returns:**
+- Key metadata (created, updated dates)
+- All translations across languages
+- Translation statuses
+- Context and notes
+
+### updateTranslations
+
+Update translations for existing keys.
+
+```
+Parameters:
+- projectId: Project ID (required)
+- translations: Array of translation updates
+  - key: Key name
+  - namespace: Namespace
+  - language: Target language code
+  - value: Translation text
+  - status: Optional status (draft, reviewed, approved)
+```
+
+**Example:**
 ```json
 {
-  "projects": [
+  "translations": [
     {
-      "id": "proj_xxx",
-      "name": "My App",
-      "slug": "my-org/my-app",
-      "sourceLanguage": "en",
-      "targetLanguages": ["tr", "de", "fr"]
+      "key": "auth.login.title",
+      "namespace": "common",
+      "language": "tr",
+      "value": "Giriş Yap",
+      "status": "reviewed"
     }
   ]
 }
 ```
 
-### getProject
-
-Get project details including languages and stats.
-
-```json
-{
-  "tool": "getProject",
-  "project": "my-org/my-app"
-}
-```
-
-### listKeys
-
-List translation keys with filtering.
-
-```json
-{
-  "tool": "listKeys",
-  "project": "my-org/my-app",
-  "namespace": "common",
-  "status": "draft",
-  "language": "en",
-  "search": "button",
-  "limit": 50
-}
-```
-
-**Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| project | string | Project identifier (required) |
-| namespace | string | Filter by namespace |
-| status | string | `draft`, `reviewed`, `approved` |
-| language | string | Language code for translations |
-| search | string | Search in key names or values |
-| limit | number | Max results (default: 50) |
-
 ### createKeys
 
-Create new translation keys.
+Create new translation keys with source text.
 
+```
+Parameters:
+- projectId: Project ID (required)
+- keys: Array of keys to create
+  - key: Key name
+  - namespace: Namespace
+  - sourceText: Source language text
+```
+
+**Example:**
 ```json
 {
-  "tool": "createKeys",
-  "project": "my-org/my-app",
   "keys": [
     {
       "key": "checkout.title",
@@ -134,97 +140,65 @@ Create new translation keys.
     {
       "key": "checkout.subtitle",
       "namespace": "common",
-      "sourceText": "Complete your order"
+      "sourceText": "Complete your purchase"
     }
   ]
 }
 ```
-
-### updateKeys
-
-Update translations for existing keys.
-
-```json
-{
-  "tool": "updateKeys",
-  "project": "my-org/my-app",
-  "translations": [
-    {
-      "key": "checkout.title",
-      "namespace": "common",
-      "language": "tr",
-      "text": "Ödeme",
-      "status": "reviewed"
-    },
-    {
-      "key": "checkout.title",
-      "namespace": "common",
-      "language": "de",
-      "text": "Kasse"
-    }
-  ]
-}
-```
-
-**Parameters per translation:**
-| Param | Type | Description |
-|-------|------|-------------|
-| key | string | Key name (required) |
-| namespace | string | Namespace (default: "default") |
-| language | string | Language code (required) |
-| text | string | Translation text (required) |
-| isSource | boolean | `true` if updating source language |
-| status | string | Set status after update |
 
 ### deleteKeys
 
-Soft-delete translation keys.
+Soft-delete translation keys (can be recovered).
 
-```json
-{
-  "tool": "deleteKeys",
-  "project": "my-org/my-app",
-  "keys": [
-    { "key": "deprecated.feature", "namespace": "common" }
-  ]
-}
+```
+Parameters:
+- projectId: Project ID (required)
+- keys: Array of keys to delete
+  - key: Key name
+  - namespace: Namespace
 ```
 
-### addLanguage
+### translateKeys
 
-Add a new target language to project.
+AI-powered translation with glossary support.
 
-```json
-{
-  "tool": "addLanguage",
-  "project": "my-org/my-app",
-  "language": "ja",
-  "name": "Japanese"
-}
+```
+Parameters:
+- projectId: Project ID (required)
+- keys: Array of key names or patterns (e.g., "auth.*")
+- targetLanguages: Array of language codes
+- useGlossary: Boolean (default: true)
+- context: Optional context for better translations
 ```
 
-## Usage Examples
+**Example:**
+```
+"Translate all checkout keys to German and French"
+→ Uses translateKeys with keys: ["checkout.*"], targetLanguages: ["de", "fr"]
+```
+
+## Usage Patterns
 
 ### Adding Keys While Coding
 
-When creating a new component:
+When building a new feature:
 
 ```
-You: I'm creating a new checkout page. Create these translation keys:
+You: I'm creating a checkout page. Create these translation keys:
 - checkout.title: "Checkout"
 - checkout.items: "Your items"
 - checkout.total: "Total"
 - checkout.placeOrder: "Place Order"
 
-Claude: [Uses createKeys tool to add all keys]
+Claude: [Uses createKeys to add all keys to the project]
 ```
 
 ### Translating Content
 
 ```
-You: Translate all keys in the checkout namespace to Turkish and German
+You: Translate the checkout namespace to Turkish
 
-Claude: [Uses listKeys to find keys, then updateKeys to add translations]
+Claude: [Uses getTranslations to find keys, then translateKeys to generate translations]
 ```
 
 ### Checking Translation Status
@@ -232,33 +206,26 @@ Claude: [Uses listKeys to find keys, then updateKeys to add translations]
 ```
 You: What keys are missing Turkish translations?
 
-Claude: [Uses listKeys with status filter to find untranslated keys]
+Claude: [Uses getTranslations with status filter to find untranslated keys]
 ```
 
-### Batch Operations
+### Updating Existing Translations
 
 ```
-You: Our button text changed from "Submit" to "Save". Update this
-across all namespaces.
+You: The "Submit" button text should be "Save Changes" instead
 
-Claude: [Uses listKeys to find "Submit", then updateKeys to change to "Save"]
+Claude: [Uses getTranslations to find keys with "Submit", then updateTranslations]
 ```
 
-## Project Identifier Format
+## Project Identifier
 
-Always use the format: `organization-slug/project-slug`
+Use the project ID from your dashboard:
 
 ```
-✅ my-org/my-app
-✅ acme-corp/dashboard
-❌ proj_xxx (use slug, not ID)
-❌ my-app (need org prefix)
+Dashboard → Project → Settings → Project ID
 ```
 
-Find your project slug:
-```
-Dashboard → Project → Settings → General → Project Slug
-```
+Format: `proj_xxxxxxxxxxxx`
 
 ## Error Handling
 
@@ -266,58 +233,34 @@ Dashboard → Project → Settings → General → Project Slug
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `PROJECT_NOT_FOUND` | Invalid project identifier | Check slug format |
+| `PROJECT_NOT_FOUND` | Invalid project ID | Check project ID in dashboard |
 | `UNAUTHORIZED` | Invalid or expired API key | Generate new key |
-| `KEY_EXISTS` | Creating duplicate key | Use updateKeys instead |
-| `LANGUAGE_NOT_FOUND` | Invalid language code | Use addLanguage first |
+| `KEY_EXISTS` | Creating duplicate key | Use updateTranslations instead |
+| `LANGUAGE_NOT_FOUND` | Invalid language code | Add language to project first |
 | `RATE_LIMITED` | Too many requests | Wait and retry |
-
-### Error Response Format
-
-```json
-{
-  "error": {
-    "code": "KEY_EXISTS",
-    "message": "Key 'common.title' already exists",
-    "details": {
-      "key": "common.title",
-      "namespace": "common"
-    }
-  }
-}
-```
 
 ## Best Practices
 
-1. **Use descriptive keys** - AI can suggest better translations with context
-2. **Batch operations** - Create/update multiple keys in one call
-3. **Check before create** - Use listKeys to avoid duplicates
-4. **Set status explicitly** - Don't rely on defaults for workflow
-5. **Use namespaces** - Organize keys logically for easier management
+1. **Batch operations** - Create/update multiple keys in one call
+2. **Use search** - Find keys before creating to avoid duplicates
+3. **Set status explicitly** - Mark translations as reviewed/approved
+4. **Provide context** - Use the context parameter for better AI translations
+5. **Use namespaces** - Organize keys logically (auth, common, checkout, etc.)
 
 ## Debugging
 
-### Enable Verbose Logging
-
-```bash
-DEBUG=better-i18n:* npx @better-i18n/mcp
-```
-
 ### Test Connection
 
-```json
-{
-  "tool": "listProjects"
-}
+Ask Claude to list your projects:
+
+```
+"List my Better i18n projects"
 ```
 
 If this returns your projects, MCP is configured correctly.
 
-### Check API Key Scopes
+### Verbose Logging
 
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.better-i18n.com/v1/me
+DEBUG=better-i18n:* npx @anthropic-ai/better-i18n-mcp
 ```
-
-Response shows your key's permissions.

@@ -1,14 +1,32 @@
 # GitHub Sync
 
-Synchronize translations with your GitHub repository.
+Synchronize translations with your GitHub repository using AST-based key discovery.
 
 ## Overview
 
-GitHub Sync provides:
-- Automatic key discovery from your codebase
-- Two-way synchronization
-- Pull request workflow for translation changes
-- Version-controlled translation history
+Better i18n GitHub Sync provides:
+- **AST-based key discovery** - Finds translation keys in your code, not just JSON files
+- **Two-way synchronization** - Import from repo, export to repo
+- **Pull request workflow** - Review translation changes before merge
+- **Automatic detection** - Discovers keys from `t()`, `useTranslations()`, etc.
+
+## How It Works
+
+```
+Your Code                    Better i18n                  Your Repo
+   │                              │                           │
+   └── t('auth.login') ──────────▶│                           │
+   └── useTranslations('common')──▶│ AST Parser               │
+                                  │ discovers keys            │
+                                  │      │                    │
+                                  │      ▼                    │
+                                  │ Creates/Updates          │
+                                  │ translation keys         │
+                                  │      │                    │
+                                  │      ▼                    │
+                                  │ Translator works ────────▶│ PR created
+                                  │                           │ with JSON
+```
 
 ## Setup
 
@@ -18,7 +36,7 @@ GitHub Sync provides:
 Project Settings → Integrations → GitHub → Install App
 ```
 
-Select repositories to grant access.
+Grant access to repositories you want to sync.
 
 ### 2. Connect Repository
 
@@ -27,131 +45,121 @@ Project Settings → GitHub → Connect Repository
 
 Repository: your-org/your-repo
 Branch: main
-Path: locales/
 ```
 
-### 3. Configure File Pattern
+### 3. Configure Paths
 
+Specify where translation files should be synced:
+
+```
+Source Path: src/           # Where to scan for t() calls
+Output Path: locales/       # Where to write JSON files
+```
+
+## Key Discovery
+
+### Supported Patterns
+
+Better i18n's AST parser detects keys from:
+
+```typescript
+// Function calls
+t('auth.login.title')
+t('common.buttons.submit', { name: 'John' })
+
+// Hooks
+const t = useTranslations('common')
+t('title')  // Resolves to common.title
+
+// next-intl patterns
+const t = useTranslations('auth')
+t('login.title')  // Resolves to auth.login.title
+```
+
+### Namespace Detection
+
+Keys are organized by namespace automatically:
+
+| Pattern | Detected Namespace | Full Key |
+|---------|-------------------|----------|
+| `useTranslations('auth')` + `t('login')` | auth | auth.login |
+| `t('common.buttons.save')` | common | common.buttons.save |
+| `getTranslations('dashboard')` | dashboard | dashboard.* |
+
+## File Formats
+
+### Supported Output Structures
+
+**Flat JSON** (`/locales/en.json`)
 ```json
 {
-  "sourcePattern": "locales/en/**/*.json",
-  "targetPattern": "locales/{locale}/**/*.json"
+  "auth.login.title": "Sign In",
+  "auth.login.submit": "Log In"
 }
 ```
 
+**Namespaced Folders** (`/locales/en/auth.json`)
+```json
+{
+  "login.title": "Sign In",
+  "login.submit": "Log In"
+}
+```
+
+**Nested Objects** (`/locales/en.json`)
+```json
+{
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "submit": "Log In"
+    }
+  }
+}
+```
+
+Configure in Project Settings → GitHub → File Format.
+
 ## Sync Modes
 
-### Pull (Import)
+### Pull (Import Keys)
 
-Import translations from GitHub to Better i18n.
+Import new keys discovered in your code:
 
 ```
-Source code changes → Webhook → Better i18n imports keys
+Code changes → Push → Webhook → Better i18n scans code → Keys created
 ```
 
 **Triggers:**
 - Push to configured branch
 - Manual sync from dashboard
 
-### Push (Export)
+### Push (Export Translations)
 
-Export translations from Better i18n to GitHub.
+Export approved translations back to repository:
 
 ```
-Translations approved → PR created → Merge → Code updated
+Translations approved → Publish → PR created → Merge → JSON updated
 ```
 
 **Options:**
-- Create PR (recommended)
+- Create PR (recommended for review)
 - Direct commit (for automated workflows)
 
-## File Format Detection
-
-Better i18n auto-detects your structure:
-
-| Structure | Detection | Example |
-|-----------|-----------|---------|
-| Flat | Single file per locale | `en.json`, `tr.json` |
-| Namespaced | Folder per locale | `en/common.json` |
-| Nested | Namespace in file | `{"common": {...}}` |
-
-### Flat JSON
-
-```
-locales/
-├── en.json    → Source
-├── tr.json    → Target
-└── de.json    → Target
-```
-
-```json
-// en.json
-{
-  "welcome": "Welcome",
-  "goodbye": "Goodbye"
-}
-```
-
-### Namespaced JSON
-
-```
-locales/
-├── en/
-│   ├── common.json
-│   └── auth.json
-└── tr/
-    ├── common.json
-    └── auth.json
-```
-
-### Nested JSON
-
-```json
-// en.json
-{
-  "common": {
-    "welcome": "Welcome"
-  },
-  "auth": {
-    "login": "Sign In"
-  }
-}
-```
-
-## Sync Workflow
-
-### Initial Import
-
-1. Connect repository
-2. Better i18n scans for translation files
-3. Keys extracted and created
-4. Source texts imported
-5. Existing translations preserved
-
-### Ongoing Sync
-
-```
-Developer adds key → Push → Webhook fires → Key appears in dashboard
-                                                    ↓
-Translator adds translation → Approve → Publish → PR created
-                                                    ↓
-                                            Merge PR → Done
-```
-
-## Pull Request Settings
+## Pull Request Workflow
 
 ### PR Configuration
 
 ```
 Project Settings → GitHub → Pull Requests
 
-Title template: "chore(i18n): Update {locale} translations"
-Branch prefix: "i18n/"
-Auto-merge: Off (recommended)
+Title: chore(i18n): Update {locale} translations
+Branch prefix: i18n/
+Auto-merge: Off
 Reviewers: @translation-team
 ```
 
-### PR Content
+### Generated PR Content
 
 ```markdown
 ## Translation Updates
@@ -159,25 +167,36 @@ Reviewers: @translation-team
 This PR updates translations for: **Turkish (tr)**
 
 ### Changes
-- `common.json`: 5 keys updated
-- `auth.json`: 2 new keys
+| File | Keys Added | Keys Updated |
+|------|-----------|--------------|
+| common.json | 5 | 2 |
+| auth.json | 0 | 3 |
 
-### Review Checklist
-- [ ] Translations are accurate
-- [ ] No placeholder issues
-- [ ] Consistent terminology
+### Summary
+- Total keys: 45
+- Translated: 43 (95.6%)
+- Missing: 2
 
 ---
 *Generated by Better i18n*
 ```
+
+## Webhook Events
+
+| Event | Action |
+|-------|--------|
+| `push` | Scan for new/changed keys in code |
+| `pull_request.merged` | Mark translations as deployed |
+
+Webhooks are verified using GitHub's HMAC-SHA256 signature.
 
 ## Conflict Resolution
 
 ### When Conflicts Occur
 
 1. Same key modified in both GitHub and Better i18n
-2. File structure changed in GitHub
-3. Key deleted in code but has translations
+2. Key deleted in code but has translations
+3. File structure changed
 
 ### Resolution Strategy
 
@@ -185,69 +204,30 @@ This PR updates translations for: **Turkish (tr)**
 Project Settings → Sync → Conflict Resolution
 
 Options:
-- Better i18n wins (dashboard is source of truth)
-- GitHub wins (code is source of truth)
+- Better i18n wins (dashboard is truth)
+- GitHub wins (code is truth)
 - Manual review (pause and notify)
-```
-
-## Webhook Events
-
-### Supported Events
-
-| Event | Action |
-|-------|--------|
-| `push` | Scan for new/changed keys |
-| `pull_request.merged` | Mark translations as deployed |
-| `delete` | Handle removed files |
-
-### Webhook URL
-
-```
-https://api.better-i18n.com/webhooks/github/{project_id}
-```
-
-### Verifying Webhooks
-
-All webhooks are verified using GitHub's HMAC-SHA256 signature.
-
-## Branch Strategy
-
-### Recommended Setup
-
-```
-main (production)
-  └── develop
-       └── feature/add-checkout-flow
-```
-
-Configure sync for `main` branch only. Feature branches sync manually.
-
-### Multi-Environment
-
-```
-Project: my-app-production → main branch
-Project: my-app-staging → develop branch
 ```
 
 ## Troubleshooting
 
+### "Keys not discovered"
+
+1. Check AST parser supports your pattern
+2. Verify source path includes your code
+3. Check for syntax errors in scanned files
+
 ### "Webhook not received"
 
 1. Check GitHub App permissions
-2. Verify webhook URL is correct
+2. Verify repository is connected
 3. Check webhook delivery logs in GitHub
-
-### "Keys not importing"
-
-1. Verify file pattern matches your structure
-2. Check JSON is valid
-3. Ensure source language file exists
 
 ### "PR not created"
 
-1. Check GitHub App has write access
-2. Verify branch protection allows bot PRs
-3. Check for existing open PR (one at a time)
+1. Verify GitHub App has write access
+2. Check branch protection allows bot PRs
+3. Ensure no open PR exists (one at a time)
 
 ### "Sync stuck"
 
@@ -257,8 +237,27 @@ Project Settings → Sync → View Jobs → Cancel stuck job
 
 ## Best Practices
 
-1. **Use feature branches** - Don't sync experimental keys
+1. **Use feature branches** - Only sync production branch
 2. **Review PRs** - Have translators review before merge
-3. **Keep JSON valid** - Lint before commit
-4. **Document patterns** - In CONTRIBUTING.md
-5. **Set up CI** - Validate translation files in CI
+3. **Keep JSON valid** - Use ESLint/Prettier for JSON
+4. **Document patterns** - Note i18n conventions in CONTRIBUTING.md
+5. **Set up CI** - Validate translation files with `better-i18n check`
+
+## CI/CD Integration
+
+Add validation to your CI pipeline:
+
+```yaml
+# .github/workflows/i18n.yml
+name: i18n Validation
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun add -D @better-i18n/cli
+      - run: bunx better-i18n check
+```

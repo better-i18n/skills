@@ -6,7 +6,7 @@ Organize translation keys for maintainability and scalability.
 
 ### Use Dot Notation
 
-Structure keys hierarchically using dots:
+Structure keys hierarchically:
 
 ```
 ✅ Good
@@ -22,7 +22,7 @@ invalid_email_error
 revenue-widget-title
 ```
 
-### Be Descriptive, Not Generic
+### Be Descriptive
 
 ```
 ✅ Good
@@ -44,20 +44,22 @@ component.navbar.links.about  # Component-specific
 common.actions.save           # Shared across app
 email.welcome.subject         # Email templates
 error.network.timeout         # Error messages
+toast.success.saved           # Notifications
 ```
 
 ## Namespaces
 
 Namespaces group related keys and enable code-splitting.
 
-### When to Use Namespaces
+### Common Namespace Patterns
 
-| Namespace | Use For |
+| Namespace | Purpose |
 |-----------|---------|
-| `common` | Shared UI: buttons, labels, errors |
+| `common` | Shared UI: buttons, labels, generic text |
 | `auth` | Login, signup, password reset |
 | `dashboard` | Dashboard-specific content |
-| `settings` | User/app settings |
+| `settings` | User and app settings |
+| `checkout` | E-commerce checkout flow |
 | `emails` | Email templates |
 | `errors` | Error messages |
 | `validation` | Form validation messages |
@@ -84,7 +86,7 @@ locales/
     └── dashboard.json
 ```
 
-**Nested (Single File, Namespace as Root Keys)**
+**Nested (Namespaces as Root Keys)**
 ```json
 // locales/en.json
 {
@@ -99,56 +101,51 @@ locales/
 
 ## Translation Statuses
 
-Each translation has a status:
+Each translation progresses through statuses:
 
-| Status | Meaning | Action Needed |
-|--------|---------|---------------|
-| `draft` | Initial translation | Review required |
-| `reviewed` | Human reviewed | Ready for approval |
-| `approved` | Ready for production | Can be published |
-| `rejected` | Needs revision | Re-translate |
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| `draft` | AI-generated or initial | Review required |
+| `reviewed` | Human verified | Ready for approval |
+| `approved` | Production ready | Can be published |
 
 ### Status Workflow
 
 ```
-[New Key] → draft → reviewed → approved → [Published]
+[New Key] → draft → reviewed → approved → [Published to CDN]
                 ↓
-            rejected → draft (revised)
+            needs work → draft (revised)
 ```
 
-## Bulk Operations
+### Status Rules
 
-### Creating Multiple Keys
+- **Draft**: Auto-set when AI translates or value changes
+- **Reviewed**: Set by translator after verification
+- **Approved**: Set by reviewer/admin, allows publishing
 
+## Working with Keys
+
+### Creating Keys
+
+Via MCP:
 ```json
 {
-  "tool": "createKeys",
-  "project": "my-org/my-app",
   "keys": [
     { "key": "nav.home", "namespace": "common", "sourceText": "Home" },
-    { "key": "nav.about", "namespace": "common", "sourceText": "About" },
-    { "key": "nav.contact", "namespace": "common", "sourceText": "Contact" }
+    { "key": "nav.about", "namespace": "common", "sourceText": "About" }
   ]
 }
 ```
 
-### Updating Multiple Translations
-
-```json
-{
-  "tool": "updateKeys",
-  "project": "my-org/my-app",
-  "translations": [
-    { "key": "nav.home", "language": "tr", "text": "Ana Sayfa" },
-    { "key": "nav.about", "language": "tr", "text": "Hakkinda" },
-    { "key": "nav.contact", "language": "tr", "text": "Iletisim" }
-  ]
-}
+Via CLI:
+```bash
+# Scan codebase and create discovered keys
+bunx better-i18n scan --create
 ```
 
-## Key Search and Filtering
+### Searching Keys
 
-### Search Patterns
+Search patterns in dashboard and API:
 
 ```
 # By prefix
@@ -160,34 +157,36 @@ status:draft              # Untranslated keys
 status:approved           # Production-ready
 
 # By language completion
-missing:tr                # Missing Turkish translations
+missing:tr                # Missing Turkish
 missing:de,fr             # Missing German OR French
 
 # Combined
 auth.* status:draft       # Draft auth keys
 ```
 
-### Using MCP listKeys
+### Updating Keys
 
+Via MCP:
 ```json
 {
-  "tool": "listKeys",
-  "project": "my-org/my-app",
-  "namespace": "common",
-  "status": "draft",
-  "language": "en",
-  "limit": 50
+  "translations": [
+    {
+      "key": "nav.home",
+      "namespace": "common",
+      "language": "tr",
+      "value": "Ana Sayfa",
+      "status": "reviewed"
+    }
+  ]
 }
 ```
 
-## Deleting Keys
+### Deleting Keys
 
-Keys are soft-deleted (can be recovered).
+Keys are soft-deleted (recoverable):
 
 ```json
 {
-  "tool": "deleteKeys",
-  "project": "my-org/my-app",
   "keys": [
     { "key": "deprecated.oldFeature", "namespace": "common" }
   ]
@@ -198,32 +197,57 @@ Keys are soft-deleted (can be recovered).
 
 ### DO
 
-- Use consistent naming patterns across the project
-- Group related keys in namespaces
-- Keep keys short but descriptive
-- Use lowercase with dots as separators
-- Document key purposes in comments (source files)
+- ✅ Use consistent naming patterns
+- ✅ Group related keys in namespaces
+- ✅ Keep keys short but descriptive
+- ✅ Use lowercase with dots as separators
+- ✅ Document patterns in CONTRIBUTING.md
+- ✅ Use CLI `scan` to discover keys automatically
 
 ### DON'T
 
-- Use spaces or special characters in keys
-- Create deeply nested keys (max 4 levels)
-- Duplicate keys across namespaces
-- Use sequential names like `item1`, `item2`
-- Mix naming conventions in same project
+- ❌ Use spaces or special characters
+- ❌ Create deeply nested keys (max 4 levels)
+- ❌ Duplicate keys across namespaces
+- ❌ Use sequential names (`item1`, `item2`)
+- ❌ Mix naming conventions
 
-## Migrating Existing Keys
+## Key Depth Guidelines
 
-If restructuring your key hierarchy:
+```
+✅ Recommended (2-4 levels)
+common.buttons.submit
+auth.login.form.email.label
+
+❌ Too deep (5+ levels)
+auth.login.form.fields.email.validation.errors.required
+
+✅ Better alternative
+auth.login.emailRequired
+```
+
+## Namespace Size Guidelines
+
+- **Optimal**: 50-150 keys per namespace
+- **Maximum**: 300 keys (consider splitting)
+- **Load strategy**: One namespace per page/feature
+
+```typescript
+// Load only needed namespace
+const t = useTranslations('checkout'); // Loads checkout.json only
+```
+
+## Migration Tips
+
+If restructuring existing keys:
 
 1. Export current translations
-2. Create mapping file (old → new)
-3. Update source code references
+2. Create mapping (old → new)
+3. Update code references
 4. Import with new structure
-5. Verify all keys resolve correctly
+5. Verify with `better-i18n check`
 
 ```javascript
-// Migration mapping
 const keyMigration = {
   'submitBtn': 'common.buttons.submit',
   'loginTitle': 'auth.login.title',
