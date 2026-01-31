@@ -6,7 +6,7 @@ Official AI agent skills for the [Better i18n](https://better-i18n.com) localiza
 
 | Skill | Description |
 |-------|-------------|
-| [best-practices](./better-i18n/best-practices) | Comprehensive guide for i18n implementation |
+| [best-practices](./best-practices) | Comprehensive guide for i18n implementation |
 
 ## Installation
 

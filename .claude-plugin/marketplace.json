@@ -15,7 +15,7 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./better-i18n/best-practices"
+        "./best-practices"
       ]
     }
   ]
