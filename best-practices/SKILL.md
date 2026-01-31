@@ -1,5 +1,5 @@
 ---
-name: best-practices
+name: i18n-best-practices
 description: Use when building internationalization features, managing translation keys, setting up localization workflows, integrating AI translation, connecting GitHub repositories, delivering translations via CDN, using MCP tools for translation management, or implementing i18n SDKs in React/Next.js applications.
 ---
 
