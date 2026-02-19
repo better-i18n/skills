@@ -77,12 +77,18 @@ Parameters:
 - languages: ["tr", "de"] — filter by languages
 - search: "login" — search in source text or translations
 - status: "missing" | "draft" | "approved" | "all" (default: "all")
-- limit: max keys to return (default: 100)
+- limit: max keys to return (1–200, default: 100)
 - namespaces: ["auth", "common"] — filter by namespace
 - keys: ["auth.login.title"] — fetch specific keys by name
 ```
 
-**Returns:** Array of keys with `id` (UUID), `key`, `namespace`, `sourceText`, and `translations` map.
+**Returns:** Keys with `id` (UUID), `key`, `namespace`, `sourceText`, `translations` map, plus pagination metadata:
+- `returned`: keys in this response
+- `total`: total keys in DB matching your filters
+- `hasMore`: `true` when more keys exist — use narrower filters instead of increasing limit
+
+> ⚠️ **Large projects:** If `hasMore: true`, do NOT retry with a higher limit. Instead, narrow your
+> query using `namespaces`, `search`, `keys[]`, or `status: "missing"` to fetch specific subsets.
 
 ### listKeys
 
@@ -291,6 +297,7 @@ Claude:
 | `UNAUTHORIZED` | Invalid or expired API key | Generate new key in dashboard |
 | `NOT_FOUND` | Project/key not found | Check project slug and key UUID |
 | `BAD_REQUEST: id Required` | updateKeys called without UUID | Call getAllTranslations first to get id |
+| `BAD_REQUEST: limit too_small` | limit < 1 (e.g., limit: 0) | Use limit 1–200; do NOT use 0 |
 | `FORBIDDEN` | No access to project | Check organization membership |
 
 ## Best Practices
