@@ -1,92 +1,57 @@
 ---
-name: i18n-best-practices
-description: Use when building internationalization features, managing translation keys, setting up localization workflows, integrating AI translation, connecting GitHub repositories, delivering translations via CDN, using MCP tools for translation management, or implementing i18n SDKs in React/Next.js applications.
+name: better-i18n
+description: >-
+  Guides all better-i18n integration decisions — SDK selection (Next.js, React,
+  Expo, Swift, Flutter, Remix), CDN vs GitHub workflow, AI-powered translation
+  management via MCP tools, CLI health checks (scan, doctor, sync), Content CMS
+  (localized models, entries, custom fields), file format conventions (flat /
+  nested / namespaced), key naming, publish flows, and quality analytics. Use
+  whenever building, modifying, or reviewing any localization feature — including
+  i18n setup, adding languages, managing translation keys, publishing, or
+  integrating AI workflows.
+
 ---
 
-# i18n Best Practices
+**better-i18n** — Localization infrastructure for modern apps. CMS + TMS + CDN + AI + MCP.
+Dashboard: https://better-i18n.com · Docs: https://docs.better-i18n.com · CDN: https://cdn.better-i18n.com
 
-Guidance for building scalable, maintainable internationalization systems with Better i18n.
+## SDK selection
 
-## Architecture Overview
+| Framework | Package | Reference |
+|---|---|---|
+| Next.js (App Router or Pages Router) | `@better-i18n/next` | <references/sdk-next.md> |
+| React + TanStack Router / use-intl | `@better-i18n/use-intl` | <references/sdk-react.md> |
+| Hono / Node.js server | `@better-i18n/server` | <references/sdk-react.md> |
+| Remix / Shopify Hydrogen | `@better-i18n/remix` | <references/sdk-react.md> |
+| React Native / Expo | `@better-i18n/expo` | <references/sdk-mobile.md> |
+| Swift (iOS / macOS / visionOS) | `BetterI18n` via SPM | <references/sdk-mobile.md> |
+| Flutter / Dart | `better_i18n` pub.dev | <references/sdk-mobile.md> |
+| Headless / Vanilla JS | `@better-i18n/core` | <references/sdk-react.md> |
 
-Better i18n is a **GitHub-first localization platform** with CDN-powered delivery:
+## Workflow selection
 
-```
-[Your Repository] → [Better i18n Platform] → [Global CDN] → [Your App]
-        ↓                    ↓                    ↓              ↓
-   AST Parsing          AI Translation       Edge Cached    React/Next.js
-   Key Discovery        Human Approval       5min manifest  Vite/TanStack
-   GitHub Sync          MCP Tools            1hr messages   Any Framework
-```
+| Task | Approach | Reference |
+|---|---|---|
+| Upload JSON files, no GitHub needed | CDN-first | <references/cdn.md> |
+| GitHub PR-based translation sync | GitHub App + publish flow | <references/github-sync.md> |
+| AI-assisted key and translation management | MCP tools | <references/mcp.md> |
+| Localized CMS content (blog, docs, pages) | Content CMS + SDK | <references/content.md> |
+| Scan codebase for hardcoded strings | CLI `scan` | <references/cli.md> |
+| Check translation coverage and key sync | CLI `sync` / `check` | <references/cli.md> |
+| Full i18n health analysis with score | CLI `doctor` | <references/cli.md> |
+| Define key naming and namespace structure | Key conventions | <references/key-naming.md> |
+| Choose JSON file format | File formats | <references/file-formats.md> |
+| Publish translations to CDN or GitHub | Publish flows | <references/publish-and-analytics.md> |
+| Track coverage, health trends, CDN usage | Analytics | <references/publish-and-analytics.md> |
 
-### CDN URL Structure
+## Read the relevant reference before writing any code.
 
-```
-https://cdn.better-i18n.com/{org}/{project}/{resource}
+## Critical rules (apply everywhere)
 
-Resources:
-├── manifest.json              # Available languages + metadata
-├── {locale}.json              # All translations for locale
-├── {locale}/{namespace}.json  # Namespaced translations
-└── flags/{code}.svg           # Country flag images
-```
-
-## Quick Reference
-
-| Need to... | See |
-|------------|-----|
-| Set up a new i18n project | [Getting Started](./resources/getting-started.md) |
-| Use CLI commands (scan, check, sync) | [CLI Usage](./resources/cli-usage.md) |
-| Organize translation keys and namespaces | [Key Management](./resources/key-management.md) |
-| Translate content with AI assistance | [AI Translation](./resources/ai-translation.md) |
-| Sync translations with GitHub repository | [GitHub Sync](./resources/github-sync.md) |
-| Serve translations via CDN | [CDN Delivery](./resources/cdn-delivery.md) |
-| Use MCP tools in your IDE/agent | [MCP Integration](./resources/mcp-integration.md) |
-| Integrate with React or Next.js | [SDK Integration](./resources/sdk-integration.md) |
-| Handle plurals, dates, formatting | [Best Practices](./resources/best-practices.md) |
-
-## Start Here
-
-**New project?**
-Start with [Getting Started](./resources/getting-started.md) to create your project and configure `i18n.config.ts`. Then use [CLI Usage](./resources/cli-usage.md) to scan your codebase for hardcoded strings.
-
-**Existing codebase with hardcoded strings?**
-Run `better-i18n scan` to detect strings needing translation. The CLI uses AST parsing to automatically differentiate UI text from developer symbols. See [CLI Usage](./resources/cli-usage.md).
-
-**Need translations fast?**
-Use [AI Translation](./resources/ai-translation.md) to translate content with context-aware AI. Set up a glossary first to ensure consistent terminology across all translations.
-
-**Building with Next.js?**
-Use `@better-i18n/next` which integrates with `next-intl`. Supports ISR, middleware with auth callbacks, and automatic CDN fetching. See [SDK Integration](./resources/sdk-integration.md).
-
-**Building with Vite/TanStack Start?**
-Use `@better-i18n/use-intl` for React hooks or full SSR support with TanStack Start. See [SDK Integration](./resources/sdk-integration.md).
-
-**Using AI coding assistants (Claude, Cursor)?**
-Install the MCP server via [MCP Integration](./resources/mcp-integration.md). Your agent can create, update, delete keys and add languages directly from your IDE.
-
-**Production deployment?**
-Set up [CDN Delivery](./resources/cdn-delivery.md) for edge-cached translations. Manifest caches for 5 minutes, messages for 1 hour. Combine with [GitHub Sync](./resources/github-sync.md) for version-controlled deployments.
-
-**CI/CD integration?**
-Use `better-i18n check:missing` in your pipeline to fail builds when translations are incomplete. See [CLI Usage](./resources/cli-usage.md).
-
-## URL Strategy
-
-Better i18n uses **default locale without prefix** for SEO:
-
-```
-/about          → English (default)
-/tr/about       → Turkish
-/de/about       → German
-```
-
-Clean URLs for primary language, SEO-friendly variants with proper `hreflang` tags for others.
-
-## Caching Strategy
-
-| Resource | Browser Cache | CDN Cache | Invalidation |
-|----------|---------------|-----------|--------------|
-| Manifest | 5 minutes | 5 minutes | On publish |
-| Messages | 1 hour | 1 hour | On publish |
-| Flags | 1 year | 1 year | Immutable |
+- **Project identifier** is always `"org/project"` — e.g. `"acme/dashboard"` or `"stripe/web"`
+- **Locale codes are lowercase BCP 47** on the CDN: `"pt-BR"` → `"pt-br"`. Always call `normalizeLocale()` before constructing CDN paths.
+- **Singletons** — `createI18n` (Next.js), `createServerI18n`, `createRemixI18n`, `createI18nCore` must be instantiated once at module scope. Never inside a function, request handler, or component.
+- **`createKeys` vs `updateKeys`** — `createKeys` creates NEW keys only. Using it on existing keys causes phantom key accumulation (documented incident: 1,005 duplicates in one operation). Always fetch the key ID with `listKeys` first, then call `updateKeys`.
+- **CDN always returns HTTP 200** — check for `{ fallback: true }` in the JSON body, not HTTP status codes.
+- **Default namespace → `"translations"` in CDN paths** — the namespace `"default"` is stored as `"translations"` internally. Use `null` namespace for flat-key projects.
+- **Free to get started** — all SDKs and CLI are open-source. Paid plans unlock more languages, history, and team features.
