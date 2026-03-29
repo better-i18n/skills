@@ -20,11 +20,12 @@
 ## Installation
 
 ```bash
-# Claude Code (via skills.sh)
-npx skills init better-i18n/skills
+# Claude Code, Cursor, Windsurf, Codex — any agent
+npx skills add better-i18n/skills
 
-# Cursor / Windsurf
-# Copy best-practices/SKILL.md content into .cursor/rules/better-i18n.mdc
+# Install to a specific agent only
+npx skills add better-i18n/skills -a claude-code
+npx skills add better-i18n/skills -a cursor
 ```
 
 ## What are Agent Skills?
